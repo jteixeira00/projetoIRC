@@ -26,8 +26,8 @@
 #include <strings.h>
 
 
-#define SERVER_PORT     9000
-#define BUF_SIZE	1024
+#define SERVER_PORT     9001
+#define BUF_SIZE	256
 
 void process_client(int fd,struct sockaddr_in client_addr);
 void erro(char *msg);
@@ -80,54 +80,48 @@ void process_client(int client_fd,struct sockaddr_in client_addr)
   char buf_int[BUF_SIZE];
   int n=0, n_dados=0;
   int dados = 0;
-  int file_fd;
+  FILE *file;
   int teste;
   char buf[BUF_SIZE];
 	printf("Connected %s with port: %d\n", inet_ntoa(client_addr.sin_addr),htons(SERVER_PORT));
   strcpy(buffer,"");
-  while(strcmp(buffer, "SAIR")!=0){
-    
-    //read(client_fd, buffer, BUF_SIZE-1);
+ 
 
     struct stat bufferF;
-    if ((file_fd = open("txt.txt",O_RDONLY))==-1){
-        perror("open fail");
-        
-    }
-
-    if (stat(buffer,&bufferF)==-1){
-      perror("stat fail");
-      
-    }
-    else{
-      off_t sz=bufferF.st_size;
-    }
-    bzero(&buf, BUF_SIZE);
-
-    int n=read(file_fd, buf, BUF_SIZE);
+    file= fopen("original.jpg","rb");
     
-    while(n){
+    
 
+    n=fread(buf, 1, BUF_SIZE, file);
+    printf("%d\n",n );
+    buf[BUF_SIZE] = '\0';
+    while(n){
+        printf("ora bolas\n");
         if(n==-1){
           perror("erro leitura ficheiro");
           
         }
-        if(write(client_fd, buf, n)==-1){
-          perror("send error");
-          
-        }
+
+        
+
         printf( "%s\n", buf );
-        bzero(&buf, BUF_SIZE);
-        n = read(file_fd, buf, BUF_SIZE);
-        sleep(1);
-    }
+        
+        if(n > 0){
+          printf("Sending \n");
+          write(client_fd, buf, n);
+        }
+
+        n = fread(buf, 1, BUF_SIZE,file);
+        
+        }
        
     
     write(client_fd, '\0', 0);
+    sleep(1);
     //read(client_fd, buf_int, BUF_SIZE-1);
     fflush(stdout);
 
-  }
+  
 
 	close(client_fd);
 }

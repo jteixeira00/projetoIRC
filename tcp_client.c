@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <strings.h>
 #include <string.h>
-#define BUF_SIZE 1024
+#define BUF_SIZE 256
 
 void erro(char *msg);
 size_t strlen(const char *s);
@@ -34,13 +34,14 @@ size_t strlen(const char *s);
 int main(int argc, char *argv[]) {
   char endServer[100];
   
-  int fd, fd_file; 
+  int fd; 
+  FILE *fp;
   char buffer[BUF_SIZE];
   char buf[BUF_SIZE];
   
   struct sockaddr_in addr;
   struct hostent *hostPtr;
-  
+  int bytesReceived =0;
   if (argc != 3) {
     	printf("cliente <host> <port> \n");
     	exit(-1);
@@ -62,27 +63,24 @@ int main(int argc, char *argv[]) {
   if( connect(fd,(struct sockaddr *)&addr,sizeof (addr)) < 0){
 	erro("Connect");
 	}
-	//scanf("%s", buffer);
-	//write(fd, buffer, strlen(buffer));
+	
 
-	if ((fd_file=open("ficheiroRecebido.txt",O_CREAT|O_WRONLY,0600))==-1)
-        {
-            perror("open fail");
-            exit (3);
-        }
-	int n= read(fd, buf, BUF_SIZE);
-	printf("oi ola\n");
-	while(buf[0]!='\0'){
-		printf("merda\n");
-		if((write(fd_file,buf,n))==-1){
-                perror("write fail");
-                exit (6);
-            }
-		
-		bzero(buf, BUF_SIZE);
-		n=read(fd, buf,BUF_SIZE);
-		
-	}
+	fp=fopen("ficheiroRecebido.jpg","wb");
+        
+     
+
+    while((bytesReceived = read(fd, buf, BUF_SIZE)) > 0){
+	    printf("Bytes received %d\n",bytesReceived);
+	 	buf[bytesReceived] = 0;
+		fwrite(buf, 1,bytesReceived,fp);
+	 	printf("%s \n", buf);
+ 	}
+
+ 	if(bytesReceived < 0){
+
+ 		printf("\n Read Error \n");
+ 	}
+
 
 	printf("FIM DA TRANSMISSAO\n");
   	close(fd);
