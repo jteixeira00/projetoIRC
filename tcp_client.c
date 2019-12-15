@@ -60,12 +60,16 @@ int main(int argc, char *argv[]) {
   if((fd = socket(AF_INET,SOCK_STREAM,0)) == -1){
 	erro("socket");
   }
-  printf("%s\n", argv[1]);
+  
+
   if( connect(fd,(struct sockaddr *)&addr,sizeof (addr)) < 0){
 	erro("Connect");
 	}
+	printf("%s\n", argv[2]);
+	strcpy(buffer, argv[2]);
 
-	write(fd, argv[1], 200);
+	printf("%s\n", buffer );
+	write(fd, argv[2], BUF_SIZE);
 
 	fp=fopen("ficheiroRecebido.jpg","wb");
         

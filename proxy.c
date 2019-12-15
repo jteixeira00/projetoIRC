@@ -21,7 +21,7 @@
 #include <strings.h>
 #include <string.h>
 #define BUF_SIZE 256
-#define SERVER_PORT     9000
+#define SERVER_PORT 9000
 
 void process_client(int fd, struct sockaddr_in client_addr);
 int fdclient;
@@ -53,14 +53,15 @@ int main(){
 	    //wait for new connection
 	    printf("AQUI\n");
 	    client = accept(fdclient,(struct sockaddr *)&client_addr,(socklen_t *)&client_addr_size);
-	    printf("MAS NAO AQUI\n");
+	    printf("%d\n", fdclient);
 	    inet_ntop(AF_INET,&client_addr.sin_addr,ip,INET_ADDRSTRLEN);
 	    if (client > 0) {
-		
+			
 	      if (fork() == 0) {
 			
 	        close(fdclient);
-	        process_client(fdclient,client_addr);
+	        printf("%d\n",fdclient );
+	        process_client(client,client_addr);
 	        exit(0);
 	      }
 	    close(client);
@@ -71,6 +72,7 @@ int main(){
 void process_client(int client_fd, struct sockaddr_in client_addr){
 	char buffer[BUF_SIZE], output[BUF_SIZE];
 	char buf_int[BUF_SIZE];
+	printf("%s\n", buffer );
 	int n=0;
 	int fd;
 
@@ -78,8 +80,19 @@ void process_client(int client_fd, struct sockaddr_in client_addr){
 	struct hostent *hostPtr;
 	int bytesReceived=0;
 	printf("maybe\n");
-	read(client_fd, buffer,200);
-	printf("%s\n", buffer );
+	
+	printf("%s\n",buffer );
+	
+	fflush(stdin);
+	fflush(stdout);
+	printf("client fd%d\n", client_fd);
+	read(client_fd, buffer,BUF_SIZE);
+	printf("%s\n", buffer);
+	
+	int nread = read(client_fd, buffer, BUF_SIZE-1);
+	printf("nread %d\n", nread );
+	buffer[nread] = '\0';
+	printf("%s\n", buffer);
 	printf("tou aqui\n");
 	
 	if ((hostPtr = gethostbyname(buffer)) == 0)
