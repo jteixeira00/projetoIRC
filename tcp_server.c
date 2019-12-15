@@ -26,7 +26,7 @@
 #include <strings.h>
 
 
-#define SERVER_PORT     9001
+#define SERVER_PORT 9001
 #define BUF_SIZE	256
 
 void process_client(int fd,struct sockaddr_in client_addr);
@@ -78,20 +78,19 @@ void process_client(int client_fd,struct sockaddr_in client_addr)
 {
   char buffer[BUF_SIZE], output[BUF_SIZE];
   char buf_int[BUF_SIZE];
-  int n=0, n_dados=0;
-  int dados = 0;
+  int n=0;
+  
   FILE *file;
-  int teste;
+  
   char buf[BUF_SIZE];
 	printf("Connected %s with port: %d\n", inet_ntoa(client_addr.sin_addr),htons(SERVER_PORT));
   strcpy(buffer,"");
- 
+  read(client_fd, buffer, 30);
+  printf("%s\n", buffer );
 
-    struct stat bufferF;
+    
     file= fopen("original.jpg","rb");
     
-    
-
     n=fread(buf, 1, BUF_SIZE, file);
     printf("%d\n",n );
     buf[BUF_SIZE] = '\0';
@@ -101,8 +100,6 @@ void process_client(int client_fd,struct sockaddr_in client_addr)
           perror("erro leitura ficheiro");
           
         }
-
-        
 
         printf( "%s\n", buf );
         

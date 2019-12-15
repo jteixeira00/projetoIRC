@@ -29,7 +29,7 @@
 #define BUF_SIZE 256
 
 void erro(char *msg);
-size_t strlen(const char *s);
+//size_t strlen(const char *s);
 
 int main(int argc, char *argv[]) {
   char endServer[100];
@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in addr;
   struct hostent *hostPtr;
   int bytesReceived =0;
-  if (argc != 3) {
-    	printf("cliente <host> <port> \n");
+  if (argc != 4) {
+    	printf("cliente <proxy> <server> <port> \n");
     	exit(-1);
   }
 
@@ -54,16 +54,18 @@ int main(int argc, char *argv[]) {
   bzero((void *) &addr, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = ((struct in_addr *)(hostPtr->h_addr))->s_addr;
-  addr.sin_port = htons((short) atoi(argv[2]));
+  addr.sin_port = htons((short) atoi(argv[3]));
 
 
   if((fd = socket(AF_INET,SOCK_STREAM,0)) == -1){
 	erro("socket");
   }
+  printf("%s\n", argv[1]);
   if( connect(fd,(struct sockaddr *)&addr,sizeof (addr)) < 0){
 	erro("Connect");
 	}
-	
+
+	write(fd, argv[1], 200);
 
 	fp=fopen("ficheiroRecebido.jpg","wb");
         
