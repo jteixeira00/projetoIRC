@@ -79,9 +79,13 @@ int main(int argc, char *argv[]) {
   FILE *fp;
   char buffer[BUF_SIZE];
   char buf[BUF_SIZE];
-  
+  char comando[BUF_SIZE];
+  char resposta[BUF_SIZE];
   struct sockaddr_in addr;
   struct hostent *hostPtr;
+  char encr[50];
+  char fich[50];
+
   int bytesReceived =0;
   if (argc != 4) {
     	printf("cliente <proxy> <server> <port> \n");
@@ -106,13 +110,45 @@ int main(int argc, char *argv[]) {
   if( connect(fd,(struct sockaddr *)&addr,sizeof (addr)) < 0){
 	erro("Connect");
 	}
-	printf("%s\n", argv[2]);
-	strcpy(buffer, argv[2]);
-
-	printf("%s\n", buffer );
+	
 	write(fd, argv[2], BUF_SIZE);
+	fflush(stdin);
+	fflush(stdout);
+	printf("Insira um comando\n");
+	read(fd, resposta, BUF_SIZE);
+	fgets(comando, BUF_SIZE, stdin);
 
-	fp=fopen("ficheiroRecebido","wb");
+	strtok(comando, "\n");
+	printf("COMANDO %s\n\n\n", comando);
+	write(fd, comando, BUF_SIZE);
+	read(fd, resposta, BUF_SIZE);
+	printf("resposta %s\n\n\n\n", resposta);
+	while(strcmp(resposta, "download")!=0){
+		printf("Insira um comando\n");
+		
+		fgets(comando, BUF_SIZE, stdin);
+		strtok(comando, "\n");
+		write(fd, comando, BUF_SIZE);
+		read(fd, resposta, BUF_SIZE);
+		printf("%s\n", resposta);
+	}
+
+
+
+	sscanf(comando, "DOWNLOAD TCP %s %s", encr, fich);
+	if(strcmp(encr, "NOR")==0){
+		fp =fopen(fich, "wb");
+
+
+	}
+	else{
+		fp=fopen("ficheiroRecebido","wb");
+	}
+
+
+
+
+	
         
      
 
@@ -121,16 +157,23 @@ int main(int argc, char *argv[]) {
 	 	buf[bytesReceived] = 0;
 		fwrite(buf, 1,bytesReceived,fp);
 	 	printf("%s \n", buf);
+	 	
  	}
-
+ 	fclose(fp);
  	if(bytesReceived < 0){
 
  		printf("\n Read Error \n");
  	}
- 	unsigned char key[32];
- 	memcpy(key, "This high-level API encrypts a ", crypto_secretstream_xchacha20poly1305_KEYBYTES);
- 	fclose(fp);
- 	decrypt("desencriptado.txt", "ficheiroRecebido", key);
+
+ 	if(strcmp(encr, "ENC")==0){
+		unsigned char key[32];
+ 		memcpy(key, "This high-level API encrypts a ", crypto_secretstream_xchacha20poly1305_KEYBYTES);
+ 	
+ 		decrypt(fich, "ficheiroRecebido", key);
+ 	}
+
+
+ 	
 
 
 	printf("FIM DA TRANSMISSAO\n");

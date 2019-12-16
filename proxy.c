@@ -47,14 +47,14 @@ int main(){
 		erro("na funcao listen");
   	client_addr_size = sizeof(client_addr);
 
+  	
+
   	while (1) {
 	    //clean finished child processes, avoiding zombies
 	    //must use WNOHANG or would block whenever a child process was working
 	    while(waitpid(-1,NULL,WNOHANG)>0);
 	    //wait for new connection
-	    printf("AQUI\n");
 	    client = accept(fdclient,(struct sockaddr *)&client_addr,(socklen_t *)&client_addr_size);
-	    printf("%d\n", fdclient);
 	    inet_ntop(AF_INET,&client_addr.sin_addr,ip,INET_ADDRSTRLEN);
 	    if (client > 0) {
 			
@@ -83,7 +83,6 @@ void process_client(int client_fd, struct sockaddr_in client_addr){
 	fflush(stdout);
 
 	int nread = read(client_fd, buffer, BUF_SIZE-1);
-	printf("nread %d\n", nread );
 	buffer[nread] = '\0';
 	printf("%s\n", buffer);
 
@@ -97,7 +96,7 @@ void process_client(int client_fd, struct sockaddr_in client_addr){
   	addr.sin_family = AF_INET;
   	addr.sin_addr.s_addr = ((struct in_addr *)(hostPtr->h_addr))->s_addr;
   	
-  	addr.sin_port = htons(9002);
+  	addr.sin_port = htons(9005);
 
   	
   	if((fd = socket(AF_INET,SOCK_STREAM,0)) == -1){
@@ -108,9 +107,19 @@ void process_client(int client_fd, struct sockaddr_in client_addr){
 	}
 
 	char buf[BUF_SIZE];
-	printf("Connected %s with port: %d\n", inet_ntoa(client_addr.sin_addr),htons(9002));
+	printf("Connected %s with port: %d\n", inet_ntoa(client_addr.sin_addr),htons(9005));
 	strcpy(buffer,"");
-
+	char comando[BUF_SIZE];
+	char resposta[BUF_SIZE];
+	
+	while(strcmp(resposta, "download") !=0){
+		read(client_fd, comando, BUF_SIZE);
+		printf("comando %s\n\n\n", comando);
+		write(fd, comando, BUF_SIZE);
+		read(fd, resposta, BUF_SIZE);
+		printf("resposta %s\n\n\n\n", resposta);
+		write(client_fd, resposta, BUF_SIZE);
+	}
 
 	while((bytesReceived = read(fd, buf, BUF_SIZE)) > 0){
 

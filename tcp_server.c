@@ -24,9 +24,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <strings.h>
+#include <dirent.h>
 
+#define SERVER_PORT 9005
 
-#define SERVER_PORT 9002
 #define BUF_SIZE	256
 #define CHUNK_SIZE 256
 
@@ -104,9 +105,48 @@ int main() {
   return 0;	
 }
 
-int seperatings(char string[BUF_SIZE]){
+void list(int client_fd){
+  char lista[BUF_SIZE];
+  struct dirent *diretoria;
+  DIR *dir = opendir("./projetoIRC");
+  if(dir==NULL){
+    perror("Erro: Abrir Directoria");
+  }
+  while((diretoria = readdir(dir))){
+    if(strcmp(diretoria->d_name,".")==0 || strcmp(diretoria->d_name,"..")==0 || diretoria->d_type!=DT_REG){
+        }
+        else{
+      strncat(lista,diretoria->d_name,sizeof(diretoria->d_name));
+      strncat(lista,"\n",1);
+
+    }
+  }
+  closedir(dir);
+  write(client_fd, lista, strlen(lista));
   
-  strtok(string, "\n");
+}
+int checkfile(char *word){
+  struct dirent *diretoria;
+  DIR *dir = opendir("./ServerFiles");
+  if(dir==NULL){
+    perror("Erro: Abrir Directoria");
+  }
+  while((diretoria = readdir(dir))){
+    if(strcmp(diretoria->d_name,".")==0 || strcmp(diretoria->d_name,"..")==0 || diretoria->d_type!=DT_REG){
+        }
+        else{
+      if(strcmp(diretoria->d_name,word) == 0){
+        return 0;
+      }
+    }
+  }
+  closedir(dir);
+  return -1;
+}
+
+int seperatings(char string[BUF_SIZE], int client_fd){
+  
+  
   char *word;
   char *type;
   char *encr;
@@ -116,38 +156,42 @@ int seperatings(char string[BUF_SIZE]){
   if(strcmp(word,"DOWNLOAD")==0){
     type = strtok(NULL," ");
     if(type == NULL){
-      printf("COMANDO INCORRETO\n");
+      write(client_fd, "COMANDO INCORRETO type", strlen("COMANDO INCORRETO")+20);
       return -1;
     }
     encr = strtok(NULL," ");
     if(encr == NULL){
-      printf("COMANDO INCORRETO\n");
+      write(client_fd, "COMANDO INCORRETO encr", strlen("COMANDO INCORRETO")+20);
       return -1;
     }
     fich = strtok(NULL," ");
     if(fich == NULL){
-      printf("COMANDO INCORRETO\n");
+      write(client_fd, "COMANDO INCORRETO nome", strlen("COMANDO INCORRETO")+20);
       return -1;
     }
     if((strcmp(type,"TCP")!=0 && strcmp(type,"UDP")!=0)||(strcmp(encr,"NOR")!=0 && strcmp(encr,"ENC")!=0)||(checkfile(fich)==-1)){
-      printf("COMANDO INCORRETO\n");
+      
+
+      write(client_fd, "COMANDO INCORRETO tudo", strlen("COMANDO INCORRETO")+20);
       return -1;
     }
     else{
       printf("%s %s %s\n",type,encr,fich);
+
+      write(client_fd, "download", strlen("download"));
     }
   }
 
   else if(strcmp(word,"LIST")==0){
-    list();
+    list(client_fd);
   }
 
   else if (strcmp(word,"QUIT")==0){
-    printf("QUITED\n");
+    write(client_fd, "QUITED", strlen("QUIT"));
   }
 
   else{
-    printf("COMANDO INCORRETO\n");
+    write(client_fd, "COMANDO INCORRETO else", strlen("COMANDO INCORRETO")+20);
     return -1;
   }
   return 0; 
@@ -163,35 +207,42 @@ void process_client(int client_fd,struct sockaddr_in client_addr)
   unsigned char key[crypto_secretstream_xchacha20poly1305_KEYBYTES];
   crypto_secretstream_xchacha20poly1305_keygen(key);
   FILE *file, *file1, *file2;
-  char *word;
-  char *type;
-  char *encr;
-  char *fich;
+  
+  char encr[50];
+  char fich[50];
   char buf[BUF_SIZE];
 	printf("Connected %s with port: %d\n", inet_ntoa(client_addr.sin_addr),htons(SERVER_PORT));
   strcpy(buffer,"");
+  fflush(stdin);
+  fflush(stdout);
+  
   while(1){
     read(client_fd, buffer, BUF_SIZE);
-    if(seperatings(buffer) ==2){ //download
+    printf("buffer: %s\n\n\n\n", buffer);
+    int sep = seperatings(buffer, client_fd);
+    if(sep ==2){ //download
       break;
     }
-    else if(seperatings(buffer)==3){
+    else if(sep==3){
       exit(0);
     }
   }
   sscanf(buffer, "DOWNLOAD TCP %s %s", encr, fich);
+  printf("encr: %s\n", encr);
+  printf("fich %s\n", fich );
 
 
   if(strcmp(encr, "ENC") ==0){
 
 
-    file= fopen("txt.txt","rb");
+    file= fopen(fich,"rb");
     file1= fopen("./ServerFiles/copia_original", "wb");
     unsigned char char_buff;
       while(fread((void*)&char_buff,1,1,file)==1){
         fwrite((void*)&char_buff, 1, 1, file1);
       }
        file2 = fopen("./ServerFiles/encrypted", "wb");
+
        fclose(file);
         fclose(file1);
         fclose(file2);
@@ -209,7 +260,7 @@ void process_client(int client_fd,struct sockaddr_in client_addr)
     char fiche[40];
     strcpy(fiche, "./ServerFiles/");
     strcat(fiche, fich);
-    file2 =fopen(fiche);
+    file2 =fopen(fiche, "rb");
 
   }
 
@@ -235,7 +286,7 @@ void process_client(int client_fd,struct sockaddr_in client_addr)
         }
        
     
-    //write(client_fd, '\0', 0);
+    write(client_fd, '\0', 0);
     sleep(1);
     //read(client_fd, buf_int, BUF_SIZE-1);
     fflush(stdout);
