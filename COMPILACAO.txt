@@ -1,0 +1,1 @@
+gcc -Wall tcp_server.c -o server /usr/local/lib/libsodium.a

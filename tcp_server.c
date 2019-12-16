@@ -20,18 +20,48 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/stat.h>
-
+#include <sodium.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <strings.h>
 
 
-#define SERVER_PORT 9001
+#define SERVER_PORT 9002
 #define BUF_SIZE	256
+#define CHUNK_SIZE 256
 
 void process_client(int fd,struct sockaddr_in client_addr);
 void erro(char *msg);
 int numbertest(char*buffer);
+
+
+static int encrypt(const char *target_file, const char *source_file, const unsigned char key[crypto_secretstream_xchacha20poly1305_KEYBYTES]){
+    unsigned char  buf_in[CHUNK_SIZE];
+    unsigned char  buf_out[CHUNK_SIZE + crypto_secretstream_xchacha20poly1305_ABYTES];
+    unsigned char  header[crypto_secretstream_xchacha20poly1305_HEADERBYTES];
+    crypto_secretstream_xchacha20poly1305_state st;
+    FILE          *fp_t, *fp_s;
+    unsigned long long out_len;
+    size_t         rlen;
+    int            eof;
+    unsigned char  tag;
+
+    fp_s = fopen(source_file, "rb");
+    fp_t = fopen(target_file, "wb");
+    crypto_secretstream_xchacha20poly1305_init_push(&st, header, key);
+    fwrite(header, 1, sizeof header, fp_t);
+    do {
+        rlen = fread(buf_in, 1, sizeof buf_in, fp_s);
+        eof = feof(fp_s);
+        tag = eof ? crypto_secretstream_xchacha20poly1305_TAG_FINAL : 0;
+        crypto_secretstream_xchacha20poly1305_push(&st, buf_out, &out_len, buf_in, rlen, NULL, 0, tag);
+        fwrite(buf_out, 1, (size_t) out_len, fp_t);
+    } while (! eof);
+    fclose(fp_t);
+    fclose(fp_s);
+    return 0;
+}
+
 
 int main() {
   int fd, client;
@@ -79,19 +109,28 @@ void process_client(int client_fd,struct sockaddr_in client_addr)
   char buffer[BUF_SIZE], output[BUF_SIZE];
   char buf_int[BUF_SIZE];
   int n=0;
-  
-  FILE *file;
+  unsigned char key[crypto_secretstream_xchacha20poly1305_KEYBYTES];
+  crypto_secretstream_xchacha20poly1305_keygen(key);
+  FILE *file, *file1, *file2;
   
   char buf[BUF_SIZE];
 	printf("Connected %s with port: %d\n", inet_ntoa(client_addr.sin_addr),htons(SERVER_PORT));
   strcpy(buffer,"");
-  read(client_fd, buffer, 30);
-  printf("%s\n", buffer );
-
+  file= fopen("original.jpg","rb");
+  file1= fopen("./ServerFiles/copia_original", "wb");
+  unsigned char char_buff;
+  while(fread((void*)&char_buff,1,1,file)==1){
+    fwrite((void*)&char_buff, 1, 1, file1);
+  }
+   file2 = fopen("./ServerFiles/encrypted", "wb");
+    memcpy(key, "This high-level API encrypts a ", crypto_secretstream_xchacha20poly1305_KEYBYTES);
+    if(encrypt("./ServerFiles/encrypted", "./ServerFiles/copia_original", key)!=0){
+      erro("Erro a encriptar\n");
+    }
+    fclose(file2);
     
-    file= fopen("original.jpg","rb");
-    
-    n=fread(buf, 1, BUF_SIZE, file);
+    file2 = fopen("./ServerFiles/encrypted", "rb");
+    n=fread(buf, 1, BUF_SIZE, file2);
     printf("%d\n",n );
     buf[BUF_SIZE] = '\0';
     while(n){
@@ -108,7 +147,7 @@ void process_client(int client_fd,struct sockaddr_in client_addr)
           write(client_fd, buf, n);
         }
 
-        n = fread(buf, 1, BUF_SIZE,file);
+        n = fread(buf, 1, BUF_SIZE,file2);
         
         }
        

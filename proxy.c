@@ -21,7 +21,8 @@
 #include <strings.h>
 #include <string.h>
 #define BUF_SIZE 256
-#define SERVER_PORT 9000
+#define SERVER_PORT 9003
+
 
 void process_client(int fd, struct sockaddr_in client_addr);
 int fdclient;
@@ -70,40 +71,35 @@ int main(){
 }
 
 void process_client(int client_fd, struct sockaddr_in client_addr){
+	
 	char buffer[BUF_SIZE], output[BUF_SIZE];
 	char buf_int[BUF_SIZE];
-	printf("%s\n", buffer );
 	int n=0;
 	int fd;
-
 	struct sockaddr_in addr;
 	struct hostent *hostPtr;
-	int bytesReceived=0;
-	printf("maybe\n");
-	
-	printf("%s\n",buffer );
-	
+	int bytesReceived=0;	
 	fflush(stdin);
 	fflush(stdout);
-	printf("client fd%d\n", client_fd);
-	read(client_fd, buffer,BUF_SIZE);
-	printf("%s\n", buffer);
-	
+
 	int nread = read(client_fd, buffer, BUF_SIZE-1);
 	printf("nread %d\n", nread );
 	buffer[nread] = '\0';
 	printf("%s\n", buffer);
-	printf("tou aqui\n");
+
 	
 	if ((hostPtr = gethostbyname(buffer)) == 0)
     	erro("Nao consegui obter endereço");
 
+
+    
   	bzero((void *) &addr, sizeof(addr));
   	addr.sin_family = AF_INET;
   	addr.sin_addr.s_addr = ((struct in_addr *)(hostPtr->h_addr))->s_addr;
-  	addr.sin_port = htons(SERVER_PORT);
+  	
+  	addr.sin_port = htons(9002);
 
-
+  	
   	if((fd = socket(AF_INET,SOCK_STREAM,0)) == -1){
 		erro("socket");
   	}
@@ -112,11 +108,23 @@ void process_client(int client_fd, struct sockaddr_in client_addr){
 	}
 
 	char buf[BUF_SIZE];
-	printf("Connected %s with port: %d\n", inet_ntoa(client_addr.sin_addr),htons(9001));
+	printf("Connected %s with port: %d\n", inet_ntoa(client_addr.sin_addr),htons(9002));
 	strcpy(buffer,"");
 
 
-	write(fd, "ora merda", 30);
+	while((bytesReceived = read(fd, buf, BUF_SIZE)) > 0){
+
+	    printf("Bytes received %d\n",bytesReceived);
+	 	buf[bytesReceived] = 0;
+	 	write(client_fd, buf, bytesReceived);
+	 	printf("%s \n", buf);
+
+ 	}
+
+ 	if(bytesReceived < 0){
+
+ 		printf("\n Read Error \n");
+ 	}
 	
 
 
