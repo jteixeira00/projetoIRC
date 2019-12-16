@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
         
      
 
-    while((bytesReceived = read(fd, buf, BUF_SIZE)) > 0){
+    while((bytesReceived = read(fd, buf, BUF_SIZE)) >= 0){
 	    printf("Bytes received %d\n",bytesReceived);
 	 	buf[bytesReceived] = 0;
 		fwrite(buf, 1,bytesReceived,fp);
@@ -129,7 +129,8 @@ int main(int argc, char *argv[]) {
  	}
  	unsigned char key[32];
  	memcpy(key, "This high-level API encrypts a ", crypto_secretstream_xchacha20poly1305_KEYBYTES);
- 	decrypt("desencriptado.jpg", "ficheiroRecebido", key);
+ 	fclose(fp);
+ 	decrypt("desencriptado.txt", "ficheiroRecebido", key);
 
 
 	printf("FIM DA TRANSMISSAO\n");
